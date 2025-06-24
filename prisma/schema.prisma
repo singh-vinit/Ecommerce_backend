@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  orders    Order[] // A user can place multiple orders.
+}
+
+model Product {
+  id          Int          @id @default(autoincrement())
+  name        String
+  description String
+  price       Float
+  Stock       Int
+  createdAt   DateTime     @default(now())
+  orders      OrderItems[] // A product can be part of multiple order items.
+}
+
+model Order {
+  id        Int          @id @default(autoincrement())
+  total     Float
+  createdAt DateTime     @default(now())
+  userId    Int
+  User      User         @relation(fields: [userId], references: [id]) // An order belongs to a user.
+  items     OrderItems[] // An order can have multiple items.
+}
+
+model OrderItems {
+  id        Int     @id @default(autoincrement())
+  quantity  Int
+  productId Int
+  orderId   Int
+  Product   Product @relation(fields: [productId], references: [id])
+  Order     Order   @relation(fields: [orderId], references: [id])
+}
