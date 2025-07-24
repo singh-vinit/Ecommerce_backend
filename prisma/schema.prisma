@@ -9,38 +9,108 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
+  id        String     @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String     @unique
   password  String
-  createdAt DateTime @default(now())
-  orders    Order[] // A user can place multiple orders.
+  role      Role       @default(CUSTOMER)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  //relation
+  orders    Order[]
+  cartItems CartItem[]
+  addresses Address[]
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  //relation
+  products    Product[]
 }
 
 model Product {
-  id          Int          @id @default(autoincrement())
+  id          String      @id @default(cuid())
   name        String
-  description String
-  price       Float
-  Stock       Int
-  createdAt   DateTime     @default(now())
-  orders      OrderItems[] // A product can be part of multiple order items.
+  description String?
+  price       Decimal     @db.Decimal(10, 2)
+  stock       Int         @default(0)
+  imageUrl    String?
+  isActve     Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  //relation
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+  //foreign-key
+  categoryId  String
+  category    Category    @relation(fields: [categoryId], references: [id])
+}
+
+model CartItem {
+  id        String  @id @default(cuid())
+  quantity  Int     @default(1)
+  //foreign-key
+  userId    String
+  productId String
+  user      User    @relation(fields: [userId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
 }
 
 model Order {
-  id        Int          @id @default(autoincrement())
-  total     Float
-  createdAt DateTime     @default(now())
-  userId    Int
-  User      User         @relation(fields: [userId], references: [id]) // An order belongs to a user.
-  items     OrderItems[] // An order can have multiple items.
+  id          String      @id @default(cuid())
+  totalAmount Decimal     @db.Decimal(10, 2)
+  status      OrderStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  //relation
+  orderItems  OrderItem[]
+  //foreign-key
+  userId      String
+  addressId   String
+  user        User        @relation(fields: [userId], references: [id])
+  address     Address     @relation(fields: [addressId], references: [id])
 }
 
-model OrderItems {
-  id        Int     @id @default(autoincrement())
+model OrderItem {
+  id        String  @id @default(cuid())
   quantity  Int
-  productId Int
-  orderId   Int
-  Product   Product @relation(fields: [productId], references: [id])
+  price     Decimal @db.Decimal(10, 2)
+  //foreign-key
+  productId String
+  orderId   String
+  product   Product @relation(fields: [productId], references: [id])
   Order     Order   @relation(fields: [orderId], references: [id])
+}
+
+model Address {
+  id        String  @id @default(cuid())
+  street    String
+  city      String
+  state     String
+  zipCode   String
+  country   String
+  isDefault Boolean @default(false)
+  //relation
+  orders    Order[]
+  //foreign-key
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
 }
