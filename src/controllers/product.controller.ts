@@ -1,7 +1,10 @@
 import { Response } from "express";
 import { prisma } from "../lib/prisma";
 import { AuthRequest } from "../lib/auth";
-import { CreateProductInput, UpdateProductSchema } from "../schema/product";
+import {
+  createProductSchema,
+  updateProductSchema,
+} from "../schema/product";
 
 export const getProducts = async function (req: AuthRequest, res: Response) {
   try {
@@ -65,6 +68,53 @@ export const getProduct = async function (req: AuthRequest, res: Response) {
     if (!product) {
       return res.status(404).json({ error: "Product not found" });
     }
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const createProduct = async function (req: AuthRequest, res: Response) {
+  try {
+    const validatedData = createProductSchema.parse(req.body);
+    //join the related category data and shows in the response
+    const product = await prisma.product.create({
+      data: validatedData,
+      include: { category: true },
+    });
+    res.status(201).json(product);
+  } catch (error: any) {
+    if (error.name == "ZodError") {
+      return res.status(400).json({ error: error.errors });
+    }
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const updateProduct = async function (req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const validatedData = updateProductSchema.parse(req.body);
+    const product = await prisma.product.update({
+      where: { id },
+      data: validatedData,
+      include: { category: true },
+    });
+    res.status(200).json(product);
+  } catch (error: any) {
+    if (error.name === "ZodError") {
+      return res.status(400).json({ error: error.errors });
+    }
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const deleteProduct = async function (req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    await prisma.product.delete({
+      where: { id },
+    });
+    res.status(200).json({ message: "Product deleted successfully" });
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }

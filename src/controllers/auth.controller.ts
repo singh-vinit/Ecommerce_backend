@@ -5,17 +5,17 @@ import { hashPassword, comparePassword, generateToken } from "../lib/auth";
 
 export const register = async function (req: Request, res: Response) {
   try {
-    const validateData = registerSchema.parse(req.body);
+    const validatedData = registerSchema.parse(req.body);
     const existingUser = await prisma.user.findUnique({
-      where: { email: validateData.email },
+      where: { email: validatedData.email },
     });
     if (existingUser) {
       return res.status(400).json({ error: "User already exists" });
     }
-    const hashedPassword = await hashPassword(validateData.password);
+    const hashedPassword = await hashPassword(validatedData.password);
     const user = await prisma.user.create({
       data: {
-        ...validateData,
+        ...validatedData,
         password: hashedPassword,
       },
       select: {
@@ -42,13 +42,13 @@ export const register = async function (req: Request, res: Response) {
 
 export const login = async function (req: Request, res: Response) {
   try {
-    const validateData = loginSchema.parse(req.body);
+    const validatedData = loginSchema.parse(req.body);
     const user = await prisma.user.findUnique({
-      where: { email: validateData.email },
+      where: { email: validatedData.email },
     });
     if (
       !user ||
-      !(await comparePassword(validateData.password, user.password))
+      !(await comparePassword(validatedData.password, user.password))
     ) {
       return res.status(401).json({ error: "Invalid Credentials" });
     }
